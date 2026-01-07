@@ -1,0 +1,29 @@
+services:
+  traefik:
+    image: traefik:latest
+    command:
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entryPoints.web.address=:80"
+      - "--accesslog=true"
+    ports:
+      - 80:80
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - ./traefik.yaml:/config/traefik-config.yaml
+    networks:
+      - traefik_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.entrypoints=web"
+    deploy:
+      resources:
+        limits:
+          memory: 500M
+
+networks:
+  traefik_network:
+    external: true

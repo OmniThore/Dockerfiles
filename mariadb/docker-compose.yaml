@@ -1,0 +1,29 @@
+services:
+  database:
+    image: mariadb:10.11.15-jammy
+    container_name: database
+    restart: unless-stopped
+    ports:
+      - ${MARIADB_PORT}:3306
+    env_file:
+      - .env
+    environment:
+      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      - MARIADB_USER=${MARIADB_USER}
+        MARIADB_PASSWORD=${MARIADB_PASSWORD}
+    volumes:
+      - dev_data:/var/lib/mysql
+    # command: --innodb-file-per-table=1 --innodb-flush-method=O_DSYNC
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+volumes:
+  dev_data:

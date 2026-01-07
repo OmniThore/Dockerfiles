@@ -1,0 +1,51 @@
+services:
+  dozzle:
+    container_name: dozzle
+    image: amir20/dozzle:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    deploy:
+      resources:
+        limits:
+          memory: 250M
+    networks:
+      - traefik_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dozzle.rule=Host(`dozzle.localhost`)"
+      - "traefik.http.routers.dozzle.entrypoints=web"
+      - "traefik.http.services.dozzle.loadbalancer.server.port=8080"
+  it-tools:
+    image: corentinth/it-tools:latest
+    container_name: it-tools
+    restart: unless-stopped
+    networks:
+      - traefik_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tools.rule=Host(`tools.localhost`)"
+      - "traefik.http.routers.tools.entrypoints=web"
+      - "traefik.http.services.tools.loadbalancer.server.port=80"
+    deploy:
+      resources:
+        limits:
+          memory: 250M
+  chartdb:
+    image: ghcr.io/chartdb/chartdb:latest
+    container_name: chartdb
+    restart: unless-stopped
+    networks:
+      - traefik_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.chartdb.rule=Host(`chartdb.localhost`)"
+      - "traefik.http.routers.chartdb.entrypoints=web"
+      - "traefik.http.services.chartdb.loadbalancer.server.port=80"
+    deploy:
+      resources:
+        limits:
+          memory: 250M
+
+networks:
+  traefik_network:
+    external: true

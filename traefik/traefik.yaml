@@ -1,20 +1,72 @@
+
 global:
   sendAnonymousUsage: false
 
 entryPoints:
   http:
     address: ":80"
+    http:
+      middlewares:
+        - redirect-to-https
+
+  https:
+    address: ":443"
+    http:
+      tls:
+        options: "intermediate"
+      middlewares:
+        - hsts-header
+
+  postgres:
+    address: ":5432/tcp"
 
 providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
+    network: "traefik_network"
 
 api:
   dashboard: true
   insecure: false
 
 log:
-  level: ERROR
+  level: WARNING
 
-accessLog: {}
+accessLog:
+  filePath: "/var/log/traefik/access.log"
+  format: "json"
+  filters:
+    statusCodes: ["400-499", "500-599"]
+    retryAttempts: true
+    minDuration: "10ms"
+
+[tls.options]
+  [tls.options.intermediate]
+    minVersion = "VersionTLS12"
+    sniStrict = true  # Enforce SNI
+    preferServerCipherSuites = true
+    curvePreferences = ["X25519", "CurveP256", "CurveP384"]
+    cipherSuites = [
+      "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+      "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+      "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+      "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+      "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305",
+      "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305"
+    ]
+    alpnProtocols = ["h2", "http/1.1"]  # Prefer HTTP/2
+
+[http.middlewares]
+  [http.middlewares.redirect-to-https.redirectScheme]
+    scheme = "https"
+    permanent = true  # 301 redirect
+
+  [http.middlewares.hsts-header.headers]
+    [http.middlewares.hsts-header.headers.customResponseHeaders]
+      Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+      X-Frame-Options = "DENY"
+      X-Content-Type-Options = "nosniff"
+      Content-Security-Policy = "default-src 'self'"
+      Referrer-Policy = "strict-origin-when-cross-origin"
+

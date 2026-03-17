@@ -1,17 +1,18 @@
 services:
   traefik:
-    image: traefik:latest
+    image: traefik:v3.6
     command:
       - "--api.insecure=false"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entryPoints.web.address=:80"
-      - "--accesslog=true"
+      - "--entryPoints.websecure.address=:443"
     ports:
       - 80:80
+      - 443:443
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - ./traefik.yaml:/config/traefik-config.yaml
+      - ./traefik.yaml:/config/traefik-config.yaml:ro
     networks:
       - traefik_network
     labels:
@@ -23,6 +24,8 @@ services:
       resources:
         limits:
           memory: 500M
+      restart_policy:
+        condition: on-failure
 
 networks:
   traefik_network:
